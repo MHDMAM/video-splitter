@@ -5,7 +5,7 @@ Produces, next to the input (or in --output):
   <name>_caller.mp4      the remote video panel only, with enhanced voice
   <name>_sidebyside.mp4  remote video left, self-view right, with enhanced voice
 
-Preview frames and the self-view temp file go to <tmp>/video-splitter/<name>/.
+Preview frames go to <tmp>/video-splitter/<name>/.
 Requires ffmpeg and ffprobe (on PATH, or in the WinGet links folder on Windows).
 """
 import argparse
@@ -170,9 +170,6 @@ def main():
     caller = out_dir / f"{name}_caller.mp4"
     run_ffmpeg("-i", str(src), "-filter_complex", f"[0:v]{crop_filter(main_box)}[v]{audio_graph}",
                *maps, *VIDEO_ENCODE, *audio_args, str(caller))
-
-    run_ffmpeg("-i", str(src), "-vf", crop_filter(self_box), "-an", "-c:v", "libx264", "-crf", "18",
-               "-preset", "slow", str(tmp_dir / "selfview.mp4"))
 
     # Built straight from the source in one pass to avoid re-encoding the caller video.
     sidebyside = out_dir / f"{name}_sidebyside.mp4"

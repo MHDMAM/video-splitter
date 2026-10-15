@@ -214,7 +214,7 @@ Temp         : C:\Users\you\AppData\Local\Temp\video-splitter\call
 | `--self-crop W:H:X:Y` | auto | Self-view box; skips detection |
 | `--preview-only` | off | Detect panels, write preview frames, stop |
 
-Only the two videos are written to the output folder. Preview frames (`preview_full.png`, `preview_main.png`, `preview_self.png`, `preview_sidebyside.png`) and the self-view clip (`selfview.mp4`) go to `<system temp>/video-splitter/<name>/`.
+Only the two videos are written to the output folder. Preview frames (`preview_full.png`, `preview_main.png`, `preview_self.png`, `preview_sidebyside.png`) go to `<system temp>/video-splitter/<name>/`.
 
 ## How it works
 
