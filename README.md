@@ -22,15 +22,157 @@ Both get the same voice enhancement: rumble cut, clarity EQ, gentle compression 
 +--------------------------------------------+
 ```
 
-## Requirements
+## Getting started (step by step)
 
-- **Python 3.8+**, standard library only, no `pip install` needed.
-- **FFmpeg** with `ffmpeg` and `ffprobe` available:
-  - Windows: `winget install --id Gyan.FFmpeg -e` (the script also finds it in the WinGet links folder before you restart the shell)
-  - macOS: `brew install ffmpeg`
-  - Debian/Ubuntu: `sudo apt install ffmpeg`
+New to the command line? Follow these steps in order. You only need to do steps 1-4 once.
 
-## Usage
+### What you need
+
+| Tool | Why | Download |
+|---|---|---|
+| **Python** 3.8 or newer (tested on 3.13) | Runs the script | https://www.python.org/downloads/ |
+| **FFmpeg** (includes `ffprobe`) | Does the video and audio work | https://ffmpeg.org/download.html (Windows builds: https://www.gyan.dev/ffmpeg/builds/) |
+| **Git** (optional) | Downloads the code | https://git-scm.com/downloads, or use **Code -> Download ZIP** on the GitHub page instead |
+
+No other packages are needed (no `pip install`).
+
+### Step 1 - Open a terminal
+
+- **Windows:** press **Start**, type `PowerShell`, press **Enter**.
+- **macOS:** press **Cmd+Space**, type `Terminal`, press **Enter**.
+- **Linux:** press **Ctrl+Alt+T**.
+
+### Step 2 - Install Python
+
+**Windows**, either of these:
+- **Option A, one command** (Windows 10/11):
+  ```powershell
+  winget install --id Python.Python.3.13 -e
+  ```
+- **Option B, installer:** download from https://www.python.org/downloads/ and run it. On the first screen, **tick "Add python.exe to PATH"**, then click **Install Now**.
+
+**macOS:** install Homebrew from https://brew.sh, then:
+```bash
+brew install python
+```
+
+**Linux (Debian/Ubuntu):**
+```bash
+sudo apt update && sudo apt install python3
+```
+
+### Step 3 - Install FFmpeg
+
+**Windows**, either of these:
+- **Option A, one command:**
+  ```powershell
+  winget install --id Gyan.FFmpeg -e
+  ```
+- **Option B, manual:** download `ffmpeg-release-full.7z` from https://www.gyan.dev/ffmpeg/builds/ and extract it (for example to `C:\ffmpeg`). Then add `C:\ffmpeg\bin` to your PATH: **Start** -> "Edit the system environment variables" -> **Environment Variables** -> select **Path** -> **Edit** -> **New**.
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux (Debian/Ubuntu):**
+```bash
+sudo apt install ffmpeg
+```
+
+### Step 4 - Check the installs
+
+**Close the terminal and open a new one** so it picks up the new programs. Then run:
+
+```bash
+python --version
+ffmpeg -version
+```
+
+- **Expected:** something like `Python 3.13.x`, then a block of text starting with `ffmpeg version ...`.
+- **macOS/Linux:** use `python3` instead of `python`, here and in every command below.
+- **Not working?** See [Troubleshooting](#troubleshooting).
+
+### Step 5 - Download this project
+
+- **With Git:**
+  ```bash
+  git clone https://github.com/<owner>/video-splitter.git
+  cd video-splitter
+  ```
+- **Without Git:** on the GitHub page click **Code -> Download ZIP** and extract it. Then in the terminal, go to the extracted folder, for example:
+  ```powershell
+  cd "$HOME\Downloads\video-splitter-main"
+  ```
+
+All commands below are run from inside this folder.
+
+### Step 6 - Record a call (if you don't have a recording yet)
+
+Record the **WhatsApp Desktop call window** while the call is in progress, then save the video as `.mp4`:
+- **Windows 11:** Snipping Tool -> **Record**.
+- **macOS:** Cmd+Shift+5.
+- Or any screen recorder.
+
+Keep the default WhatsApp layout: the caller in the middle, your camera small in the top-right corner.
+
+### Step 7 - Check the detection (preview)
+
+Tip: type the start of the command, then **drag the video file onto the terminal window** to paste its full path. Keep the quotes if the path has spaces.
+
+```bash
+python split_call.py "C:\Users\me\Videos\call.mp4" --preview-only
+```
+
+This takes a few seconds and prints the detected boxes plus a `Previews` folder path:
+- **Windows:** open that folder with `explorer "<path it printed>"`.
+- **macOS:** use `open "<path it printed>"`.
+
+Check the images:
+- `preview_main.png` should show **only the caller's video**: no black or grey border, no buttons.
+- `preview_self.png` should show **only your self-view**.
+
+If they look wrong, see [Detection is wrong](#detection-is-wrong).
+
+### Step 8 - Make the videos
+
+```bash
+python split_call.py "C:\Users\me\Videos\call.mp4"
+```
+
+- **Time:** a 1-minute recording takes about 40 seconds.
+- **Output:** when it finishes, two new files sit **next to your recording**:
+  - `call_caller.mp4` - the caller only
+  - `call_sidebyside.mp4` - the caller plus your self-view
+
+To put them somewhere else, add `-o` and a folder (it's created if it doesn't exist):
+```bash
+python split_call.py "C:\Users\me\Videos\call.mp4" -o "C:\Users\me\Videos\processed"
+```
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `'python' is not recognized` or the Microsoft Store opens | Open a **new** terminal after installing. Still failing: reinstall Python with "Add python.exe to PATH" ticked, or turn off the alias in **Settings -> Apps -> Advanced app settings -> App execution aliases** (python.exe / python3.exe). |
+| `error: ffmpeg not found` | Open a **new** terminal after installing FFmpeg. With the manual install, check that the `bin` folder is in PATH (Step 3). |
+| `can't open file 'split_call.py'` | You're not in the project folder - `cd` into it (Step 5). |
+| `error: input not found` | The path is wrong or missing its quotes. Drag the file onto the terminal to paste the exact path. |
+| The voice is too loud or too quiet | Add `--volume 0.7` (quieter) or `--volume 1.0` (louder). Default is `0.9`. |
+
+#### Detection is wrong
+
+Open `preview_full.png` from the preview folder in an image editor (Paint works) and find the caller's video rectangle:
+- **x, y:** the top-left corner, in pixels.
+- **w, h:** the width and height. Use even numbers.
+
+Do the same for your self-view, then pass both boxes:
+
+```bash
+python split_call.py "call.mp4" --main-crop 700:936:610:40 --self-crop 354:200:1548:48
+```
+
+## Usage reference
 
 ```bash
 # 1. Check the detected crops first (fast, writes preview frames to a temp folder)
