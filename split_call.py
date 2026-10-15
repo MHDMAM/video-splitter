@@ -5,7 +5,7 @@ Produces, next to the input (or in --output):
   <name>_caller.mp4      the remote video panel only, with enhanced voice
   <name>_sidebyside.mp4  remote video left, self-view right, with enhanced voice
 
-Preview frames and the self-view temp file go to <tmp>/whatsapp-call-split/<name>/.
+Preview frames and the self-view temp file go to <tmp>/video-splitter/<name>/.
 Requires ffmpeg and ffprobe (on PATH, or in the WinGet links folder on Windows).
 """
 import argparse
@@ -133,7 +133,7 @@ def main():
     out_dir = (args.output or src.parent).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     name = src.stem
-    tmp_dir = Path(tempfile.gettempdir()) / "whatsapp-call-split" / name
+    tmp_dir = Path(tempfile.gettempdir()) / "video-splitter" / name
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     width, height = (int(v) for v in probe(src, "-select_streams", "v:0", "-show_entries", "stream=width,height").split(",")[:2])
