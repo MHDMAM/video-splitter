@@ -122,3 +122,7 @@ Recordings are private call content. `.gitignore` excludes all video, audio and 
 ## More
 
 [docs/DESIGN.md](docs/DESIGN.md) records the decisions behind these defaults and the options that were considered.
+
+## License
+
+[MIT](LICENSE)
