@@ -33,6 +33,8 @@ VOICE_CHAIN = (
 )
 LOUDNORM = "loudnorm=I=-16:TP=-1.5:LRA=11"
 VIDEO_ENCODE = ["-c:v", "libx264", "-crf", "18", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
+# --compress: AV1 is about half the size of the H.264 default at near-identical quality.
+DEFAULT_AV1_CRF = 30
 AUDIO_ENCODE = ["-c:a", "aac", "-b:a", "192k"]
 
 
@@ -67,6 +69,16 @@ def ffmpeg_log(*args):
 def probe(path, *args):
     return subprocess.run([FFPROBE, "-v", "error", *args, "-of", "csv=p=0", str(path)],
                           capture_output=True, text=True).stdout.strip()
+
+
+def av1_encode(crf):
+    return ["-c:v", "libsvtav1", "-crf", str(crf), "-preset", "5", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
+
+
+def parse_crf(value):
+    if not value.isdigit() or not 0 <= int(value) <= 63:
+        raise argparse.ArgumentTypeError("expected a whole number from 0 to 63")
+    return int(value)
 
 
 def parse_crop(value):
@@ -125,8 +137,14 @@ def main():
                     help="level after normalising to -16 LUFS (default 0.9, about -16.9 LUFS)")
     ap.add_argument("--main-crop", type=parse_crop, metavar="W:H:X:Y", help="remote video panel box (skip detection)")
     ap.add_argument("--self-crop", type=parse_crop, metavar="W:H:X:Y", help="self-view box (skip detection)")
+    ap.add_argument("--compress", action="store_true",
+                    help="encode AV1 instead of H.264: about half the size, same resolution")
+    ap.add_argument("--quality", type=parse_crf, metavar="CRF",
+                    help=f"AV1 CRF for --compress, 0-63, lower is better and larger (default {DEFAULT_AV1_CRF})")
     ap.add_argument("--preview-only", action="store_true", help="detect panels and write preview frames, then stop")
     args = ap.parse_args()
+    if args.quality is not None and not args.compress:
+        ap.error("--quality only applies with --compress")
 
     src = args.input.resolve()
     if not src.is_file():
@@ -134,6 +152,13 @@ def main():
     out_dir = (args.output or src.parent).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     name = src.stem
+
+    video_args = VIDEO_ENCODE
+    if args.compress:
+        encoders = subprocess.run([FFMPEG, "-hide_banner", "-encoders"], capture_output=True, text=True).stdout
+        if "libsvtav1" not in encoders:
+            sys.exit("error: this ffmpeg build has no AV1 encoder (libsvtav1); install a full build or drop --compress")
+        video_args = av1_encode(DEFAULT_AV1_CRF if args.quality is None else args.quality)
 
     width, height = (int(v) for v in probe(src, "-select_streams", "v:0", "-show_entries", "stream=width,height").split(",")[:2])
     duration = float(probe(src, "-show_entries", "format=duration"))
@@ -151,6 +176,7 @@ def main():
     print(f"Main crop    : {':'.join(map(str, main_box))}")
     print(f"Self crop    : {':'.join(map(str, self_box))}")
     print(f"Side-by-side : {mw + sw}x{mh} (self-view at y={pad_y})")
+    print(f"Video codec  : {'AV1 CRF ' + video_args[3] if args.compress else 'H.264 CRF 18'}")
 
     if args.preview_only:
         tmp_dir = Path(tempfile.gettempdir()) / "video-splitter" / name
@@ -170,14 +196,14 @@ def main():
 
     caller = out_dir / f"{name}_caller.mp4"
     run_ffmpeg("-i", str(src), "-filter_complex", f"[0:v]{crop_filter(main_box)}[v]{audio_graph}",
-               *maps, *VIDEO_ENCODE, *audio_args, str(caller))
+               *maps, *video_args, *audio_args, str(caller))
 
     # Built straight from the source in one pass to avoid re-encoding the caller video.
     sidebyside = out_dir / f"{name}_sidebyside.mp4"
     graph = (f"[0:v]{crop_filter(main_box)}[main];"
              f"[0:v]{crop_filter(self_box)},pad={sw}:{mh}:0:{pad_y}:black[self];"
              f"[main][self]hstack=inputs=2[v]{audio_graph}")
-    run_ffmpeg("-i", str(src), "-filter_complex", graph, *maps, *VIDEO_ENCODE, *audio_args, str(sidebyside))
+    run_ffmpeg("-i", str(src), "-filter_complex", graph, *maps, *video_args, *audio_args, str(sidebyside))
 
     for path in (caller, sidebyside):
         size = probe(path, "-select_streams", "v:0", "-show_entries", "stream=width,height").replace(",", "x")

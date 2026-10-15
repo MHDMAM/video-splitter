@@ -187,6 +187,10 @@ python split_call.py "call.mp4" -o ./processed
 # Quieter result
 python split_call.py "call.mp4" --volume 0.7
 
+# Smaller files (AV1, about half the size, same resolution)
+python split_call.py "call.mp4" --compress
+python split_call.py "call.mp4" --compress --quality 26   # better quality, larger
+
 # Detection wrong? Give the panel boxes yourself (w:h:x:y in source pixels)
 python split_call.py "call.mp4" --main-crop 700:936:610:40 --self-crop 354:200:1548:48
 ```
@@ -198,6 +202,7 @@ Input        : D:\calls\call.mp4 (1920x1038, 77.48s, audio=True)
 Main crop    : 700:936:610:41
 Self crop    : 354:200:1548:49
 Side-by-side : 1054x936 (self-view at y=368)
+Video codec  : H.264 CRF 18
 D:\calls\call_caller.mp4  [700x936]  loudness -16.9 LUFS, peak -2.4 dBFS
 D:\calls\call_sidebyside.mp4  [1054x936]  loudness -16.9 LUFS, peak -2.4 dBFS
 ```
@@ -211,9 +216,13 @@ D:\calls\call_sidebyside.mp4  [1054x936]  loudness -16.9 LUFS, peak -2.4 dBFS
 | `--volume N` | `0.9` | Level after normalising to -16 LUFS. `0.9` is about -16.9 LUFS, `0.7` about -19 LUFS |
 | `--main-crop W:H:X:Y` | auto | Remote video panel box; skips detection |
 | `--self-crop W:H:X:Y` | auto | Self-view box; skips detection |
+| `--compress` | off | Encode AV1 instead of H.264: about half the file size at the same resolution and near-identical quality |
+| `--quality CRF` | `30` | AV1 quality for `--compress`, 0-63. Lower is better and larger: `28` is practically identical to the default output, `32` is smaller with slight softening |
 | `--preview-only` | off | Detect panels, write preview frames, stop |
 
 Only the two videos are written to the output folder, and a full run leaves no temporary files behind. `--preview-only` writes its preview frames (`preview_full.png`, `preview_main.png`, `preview_self.png`) to `<system temp>/video-splitter/<name>/` so you can inspect them.
+
+`--compress` output is still `.mp4`. AV1 plays in VLC, Chrome, Firefox, Edge, Windows 11 (AV1 Video Extension, usually preinstalled), Android and iPhone 15 Pro or newer. Older phones, TVs and some video editors can't play it; use the default H.264 output for those.
 
 ## How it works
 
