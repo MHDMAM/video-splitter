@@ -261,10 +261,6 @@ Processing speed is about 0.6x real time; a 77 s recording takes about 46 s.
 
 Recordings are private call content. `.gitignore` excludes all video, audio and image files so test recordings and outputs are never committed.
 
-## More
-
-[docs/DESIGN.md](docs/DESIGN.md) records the decisions behind these defaults and the options that were considered.
-
 ## License
 
 [MIT](LICENSE)
