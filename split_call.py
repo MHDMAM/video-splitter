@@ -5,7 +5,8 @@ Produces, next to the input (or in --output):
   <name>_caller.mp4      the remote video panel only, with enhanced voice
   <name>_sidebyside.mp4  remote video left, self-view right, with enhanced voice
 
-Preview frames go to <tmp>/video-splitter/<name>/.
+A full run leaves nothing in the temp folder; --preview-only writes its
+preview frames to <tmp>/video-splitter/<name>/ for you to inspect.
 Requires ffmpeg and ffprobe (on PATH, or in the WinGet links folder on Windows).
 """
 import argparse
@@ -133,8 +134,6 @@ def main():
     out_dir = (args.output or src.parent).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     name = src.stem
-    tmp_dir = Path(tempfile.gettempdir()) / "video-splitter" / name
-    tmp_dir.mkdir(parents=True, exist_ok=True)
 
     width, height = (int(v) for v in probe(src, "-select_streams", "v:0", "-show_entries", "stream=width,height").split(",")[:2])
     duration = float(probe(src, "-show_entries", "format=duration"))
@@ -153,11 +152,13 @@ def main():
     print(f"Self crop    : {':'.join(map(str, self_box))}")
     print(f"Side-by-side : {mw + sw}x{mh} (self-view at y={pad_y})")
 
-    t = f"{duration / 2:.2f}"
-    run_ffmpeg("-ss", t, "-i", str(src), "-frames:v", "1", str(tmp_dir / "preview_full.png"))
-    run_ffmpeg("-ss", t, "-i", str(src), "-vf", crop_filter(main_box), "-frames:v", "1", str(tmp_dir / "preview_main.png"))
-    run_ffmpeg("-ss", t, "-i", str(src), "-vf", crop_filter(self_box), "-frames:v", "1", str(tmp_dir / "preview_self.png"))
     if args.preview_only:
+        tmp_dir = Path(tempfile.gettempdir()) / "video-splitter" / name
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        t = f"{duration / 2:.2f}"
+        run_ffmpeg("-ss", t, "-i", str(src), "-frames:v", "1", str(tmp_dir / "preview_full.png"))
+        run_ffmpeg("-ss", t, "-i", str(src), "-vf", crop_filter(main_box), "-frames:v", "1", str(tmp_dir / "preview_main.png"))
+        run_ffmpeg("-ss", t, "-i", str(src), "-vf", crop_filter(self_box), "-frames:v", "1", str(tmp_dir / "preview_self.png"))
         print(f"Previews     : {tmp_dir}")
         return
 
@@ -177,12 +178,10 @@ def main():
              f"[0:v]{crop_filter(self_box)},pad={sw}:{mh}:0:{pad_y}:black[self];"
              f"[main][self]hstack=inputs=2[v]{audio_graph}")
     run_ffmpeg("-i", str(src), "-filter_complex", graph, *maps, *VIDEO_ENCODE, *audio_args, str(sidebyside))
-    run_ffmpeg("-ss", t, "-i", str(sidebyside), "-frames:v", "1", str(tmp_dir / "preview_sidebyside.png"))
 
     for path in (caller, sidebyside):
         size = probe(path, "-select_streams", "v:0", "-show_entries", "stream=width,height").replace(",", "x")
         print(f"{path}  [{size}]" + (f"  {loudness(path)}" if has_audio else ""))
-    print(f"Temp         : {tmp_dir}")
 
 
 if __name__ == "__main__":

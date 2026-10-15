@@ -200,7 +200,6 @@ Self crop    : 354:200:1548:49
 Side-by-side : 1054x936 (self-view at y=368)
 D:\calls\call_caller.mp4  [700x936]  loudness -16.9 LUFS, peak -2.4 dBFS
 D:\calls\call_sidebyside.mp4  [1054x936]  loudness -16.9 LUFS, peak -2.4 dBFS
-Temp         : C:\Users\you\AppData\Local\Temp\video-splitter\call
 ```
 
 ### Options
@@ -214,7 +213,7 @@ Temp         : C:\Users\you\AppData\Local\Temp\video-splitter\call
 | `--self-crop W:H:X:Y` | auto | Self-view box; skips detection |
 | `--preview-only` | off | Detect panels, write preview frames, stop |
 
-Only the two videos are written to the output folder. Preview frames (`preview_full.png`, `preview_main.png`, `preview_self.png`, `preview_sidebyside.png`) go to `<system temp>/video-splitter/<name>/`.
+Only the two videos are written to the output folder, and a full run leaves no temporary files behind. `--preview-only` writes its preview frames (`preview_full.png`, `preview_main.png`, `preview_self.png`) to `<system temp>/video-splitter/<name>/` so you can inspect them.
 
 ## How it works
 
