@@ -97,10 +97,10 @@ ffmpeg -version
 
 - **With Git:**
   ```bash
-  git clone https://github.com/<owner>/video-splitter.git
+  git clone https://github.com/MHDMAM/video-splitter.git
   cd video-splitter
   ```
-- **Without Git:** on the GitHub page click **Code -> Download ZIP** and extract it. Then in the terminal, go to the extracted folder, for example:
+- **Without Git:** on the [GitHub page](https://github.com/MHDMAM/video-splitter) click **Code -> Download ZIP** and extract it. Then in the terminal, go to the extracted folder, for example:
   ```powershell
   cd "$HOME\Downloads\video-splitter-main"
   ```
