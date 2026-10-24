@@ -34,7 +34,7 @@ New to the command line? Follow these steps in order. You only need to do steps 
 | **FFmpeg** (includes `ffprobe`) | Does the video and audio work | https://ffmpeg.org/download.html (Windows builds: https://www.gyan.dev/ffmpeg/builds/) |
 | **Git** (optional) | Downloads the code | https://git-scm.com/downloads, or use **Code -> Download ZIP** on the GitHub page instead |
 
-No other packages are needed (no `pip install`).
+No other packages are needed (no `pip install`). The optional [highlights](#highlights-optional) script needs OpenCV.
 
 ### Step 1 - Open a terminal
 
@@ -223,6 +223,51 @@ D:\calls\call_sidebyside.mp4  [1054x936]  loudness -16.9 LUFS, peak -2.4 dBFS
 Only the two videos are written to the output folder, and a full run leaves no temporary files behind. `--preview-only` writes its preview frames (`preview_full.png`, `preview_main.png`, `preview_self.png`) to `<system temp>/video-splitter/<name>/` so you can inspect them.
 
 `--compress` output is still `.mp4`. AV1 plays in VLC, Chrome, Firefox, Edge, Windows 11 (AV1 Video Extension, usually preinstalled), Android and iPhone 15 Pro or newer. Older phones, TVs and some video editors can't play it; use the default H.264 output for those.
+
+## Highlights (optional)
+
+`extract_highlights.py` picks the clearest stills and short clips from a caller video. It is fully automatic: run it and it writes the results, no choices to make. It needs OpenCV and NumPy on top of FFmpeg (`split_call.py` itself still needs no packages):
+
+```bash
+pip install "opencv-python-headless<5" numpy
+```
+
+OpenCV 5 removed the classic (non-AI) face detector this uses, hence the `<5`.
+
+```bash
+# One caller video
+python extract_highlights.py "call_caller.mp4"
+
+# Every *_caller.mp4 in a folder
+python extract_highlights.py "C:\Users\me\Videos\processed"
+```
+
+Results go to `<name>_highlights/` next to each video, best first:
+- `still_01_01m55s.jpg` ... - up to 10 stills, at least 5 s apart
+- `clip_01_01m51s.mp4` ... - up to 5 clips of 3 s, with the enhanced audio
+
+A rerun replaces the previous results. Fewer files than the maximum means the rest scored under half of the best pick and were dropped.
+
+| Option | Default | Description |
+|---|---|---|
+| `inputs` | - | Video files, or folders to search for `*_caller.mp4` |
+| `-o`, `--output DIR` | input's folder | Where to create the `<name>_highlights/` folders |
+| `--stills N` | `10` | Maximum stills, `0` for none |
+| `--clips N` | `5` | Maximum clips, `0` for none |
+| `--clip-length S` | `3` | Clip length in seconds |
+| `--gap S` | `5` | Minimum seconds between stills |
+| `--sample-fps N` | `4` | Frames analysed per second |
+
+**How it scores:** no AI models, only classic image metrics. Every metric is ranked within the video itself, so it adapts to each call's quality without thresholds:
+
+| Signal | Method | Rejects |
+|---|---|---|
+| Sharpness | Variance of the Laplacian, measured on the face when there is one | Motion blur, smeared low-bandwidth frames |
+| Motion | Mean difference from the previous sample | Mid-movement frames (stills); frozen video (clips) |
+| Exposure | Mean brightness | Black screens, camera pointed at a lamp |
+| Face | Haar cascade, trusted only if 2 of 3 neighbouring samples agree | Back of the head, empty room (only used when a face shows in at least 5% of the video) |
+
+A 2-minute caller video takes about 13 seconds.
 
 ## How it works
 
